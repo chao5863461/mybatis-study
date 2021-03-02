@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gupaoedu.study.zhangchao.mapper.MemberMapperExt">
+
+    <!-- 声明这个 namespace 使用二级缓存 -->
+    <cache type="org.apache.ibatis.cache.impl.PerpetualCache"
+           size="1024" eviction="LRU" flushInterval="120000"
+           readOnly="false"/>
+
+    <resultMap id="MembeWithUserResult" type="member">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="name" property="name" jdbcType="VARCHAR"/>
+        <result column="sex" property="sex" jdbcType="VARCHAR"/>
+        <result column="addr" property="addr" jdbcType="VARCHAR"/>
+        <result column="salary" property="salary" jdbcType="NUMERIC"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+        <result column="user_id" property="userId" jdbcType="INTEGER"/>
+
+        <association property="user" javaType="user">
+            <id column="user_id" property="userId" jdbcType="INTEGER"/>
+            <id column="name" property="name" jdbcType="INTEGER"/>
+        </association>
+
+    </resultMap>
+
+    <resultMap id="MembeWithUserQuery" type="member">
+    <id column="id" property="id" jdbcType="INTEGER"/>
+    <result column="name" property="name" jdbcType="VARCHAR"/>
+    <result column="sex" property="sex" jdbcType="VARCHAR"/>
+    <result column="addr" property="addr" jdbcType="VARCHAR"/>
+    <result column="salary" property="salary" jdbcType="NUMERIC"/>
+    <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+    <result column="user_id" property="userId" jdbcType="INTEGER"/>
+
+    <association property="user" javaType="user" column="user_id"  select="getById">
+
+    </association>
+
+</resultMap>
+
+    <update id="batchUpdate" parameterType="list">
+        update t_member set
+            name =
+            <foreach collection="list" item="member" open="case id" close="end">
+                when #{member.id} then #{member.name,jdbcType=VARCHAR}
+            </foreach>
+            ,addr =
+            <foreach collection="list" item="member" open="case id" close="end">
+                when #{member.id} then #{member.addr,jdbcType=VARCHAR}
+            </foreach>
+            ,sex =
+            <foreach collection="list" item="member" open="case id" close="end">
+                when #{member.id} then #{member.sex,jdbcType=VARCHAR}
+            </foreach>
+            ,user_id =
+            <foreach collection="list" item="member" open="case id" close="end">
+                when #{member.id} then #{member.userId,jdbcType=INTEGER}
+            </foreach>
+            where id in
+            <foreach collection="list" item="member" open="(" close=")" separator=",">
+                #{member.id,jdbcType=INTEGER}
+            </foreach>
+    </update>
+
+    <insert id="batchInsert" parameterType="list">
+
+        insert into t_member (name,addr,sex,salary,update_time,user_id)
+
+        <foreach collection="list" item="member" separator="," open="values" close="" index="index">
+            <trim prefix="(" suffix=")" suffixOverrides=",">
+                #{member.name,jdbcType=VARCHAR},
+                #{member.addr,jdbcType=VARCHAR},
+                #{member.sex,jdbcType=VARCHAR},
+                #{member.salary,jdbcType=NUMERIC},
+                #{member.updateTime,jdbcType=TIMESTAMP},
+                #{member.userId,jdbcType=INTEGER},
+            </trim>
+        </foreach>
+    </insert>
+
+    <select id="getMemberAndUser" resultMap="MembeWithUserResult" parameterType="Integer">
+        select
+            m.id,m.name,m.sex,m.addr,m.update_time,u.user_id,u.name as name
+         from
+            t_member m
+        left join
+            t_user u
+         on
+            m.user_id = u.user_id
+         where
+            m.id = #{id}
+    </select>
+
+
+    <select id="getMemberWithUserQuery" resultMap="MembeWithUserQuery" parameterType="Integer">
+        select
+            m.id,m.name,m.sex,m.addr,m.update_time,u.user_id,u.name as name
+         from
+            t_member m
+        left join
+            t_user u
+         on
+            m.user_id = u.user_id
+         where
+            m.id = #{id}
+    </select>
+
+    <select id="getById" resultType="user" parameterType="int">
+        select * from t_user where user_id = #{userId}
+     </select>
+</mapper>
